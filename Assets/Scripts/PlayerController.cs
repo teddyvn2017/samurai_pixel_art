@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
@@ -12,21 +13,28 @@ public class PlayerController : MonoBehaviour
     public float speed = 5f;
     public float jumpForce = 5f;
     public float groundCheckDistance = 0.1f;
-    private bool isGrounded;    
+    private bool isGrounded;
+
+    private bool wasGrounded = false;
+    private bool isLanded;
+
+    public GameObject dustPrefab;
+    public Transform dustPosition;
     
+    private bool isJumping = false;   
     void Start()
     {
         anim = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         anim.SetBool("isRunning", false);
         rb.freezeRotation = true;
-    }
-
-    // Update is called once per frame
+    }    
     void Update()
     {
         Move();
         Jump();
+        Attack();
+        Landed();
     }
     
     void Move()
@@ -52,9 +60,7 @@ public class PlayerController : MonoBehaviour
                 Flip();
             else if (move < 0 && isFacingRight)
                 Flip();
-        }
-
-        
+        }       
     }
 
     void Flip()
@@ -63,17 +69,41 @@ public class PlayerController : MonoBehaviour
         transform.localScale = new Vector2(transform.localScale.x * -1, transform.localScale.y);
     }
 
-    void Jump() 
+    void Jump()
+    {
+
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckDistance, groundLayer);
+        if (isGrounded && Keyboard.current.upArrowKey.wasPressedThisFrame)
+        {
+            anim.SetTrigger("isJumping");
+            anim.SetBool("isRunning", false);
+            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            CreatingLandDust();
+            // isJumping = true;
+            // isLanded = false;
+        }
+
+    }
+
+    void Attack()
+    {
+        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+            anim.SetTrigger("Attack");
+    }
+
+    void Landed()
     {
         
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckDistance, groundLayer);
-        if (isGrounded && Keyboard.current.spaceKey.wasPressedThisFrame)
+        bool isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckDistance, groundLayer);
+        if (isGrounded && !wasGrounded)
         {
-            Debug.Log("isJumping");
-            anim.SetTrigger("isJumping");
-            anim.SetBool("isRunning", false);      
-            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            CreatingLandDust();
         }
-        
+        wasGrounded = isGrounded;
+    }
+    
+    void CreatingLandDust()
+    {
+        Instantiate(dustPrefab, dustPosition.position, dustPrefab.transform.rotation);
     }
 }
