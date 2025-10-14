@@ -714,7 +714,7 @@ MonoBehaviour:
   groundCheckDistance: 0.1
   dustPrefab: {fileID: 3970851157343661380, guid: 2f9fdf6cb67617743a2cbdb2170854f4, type: 3}
   dustPosition: {fileID: 1350480036}
-  dashSpeed: 20
+  dashSpeed: 8
   dashTime: 0.5
   dashCooldown: 1
 --- !u!1 &751701388

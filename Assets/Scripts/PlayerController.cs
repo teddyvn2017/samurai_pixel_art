@@ -22,8 +22,8 @@ public class PlayerController : MonoBehaviour
     public Transform dustPosition;
 
     [Header("Dash Settings")]
-    public float dashSpeed = 15f;       // Tốc độ lướt
-    public float dashTime = 0.2f; // thời gian lướt
+    public float dashSpeed = 10f;       // Tốc độ lướt
+    public float dashTime = 0.3f; // thời gian lướt
     public float dashCooldown = 1f;  // Thời gian hồi chiêu
 
     private bool isDashing = false;
@@ -34,6 +34,7 @@ public class PlayerController : MonoBehaviour
         anim = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         anim.SetBool("isRunning", false);
+        // anim.SetBool("isJumping", false);
         rb.freezeRotation = true;
     }    
     void Update()
@@ -87,8 +88,7 @@ public class PlayerController : MonoBehaviour
             anim.SetBool("isRunning", false);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             CreatingLandDust();
-            // isJumping = true;
-            // isLanded = false;
+           
         }
 
     }
@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour
     {
         if (Keyboard.current.leftShiftKey.wasPressedThisFrame && Time.time >= nextDashTime && !isDashing)
         {
-            StartCoroutine(PerformDash());            
+            StartCoroutine(PerformDash());
         }
     }
     
@@ -128,22 +128,36 @@ public class PlayerController : MonoBehaviour
         isDashing = true;
 
         // Lấy hướng Dash dựa trên hướng nhân vật đang quay mặt (local scale X)
-        Vector2 dashDirection = new Vector2(transform.localScale.x, 0).normalized; 
+        float facingDir = transform.localScale.x > 0 ? 1 : -1;
+        Vector2 dashDirection = new Vector2(facingDir, 0);
 
-        // Vector3 dashDirection = transform.forward;
-        // Áp dụng lực Dash
-        //rb.linearVelocity = dashDirection * dashSpeed;
-        rb.AddForce(dashDirection * dashSpeed, ForceMode2D.Impulse);
-        Debug.Log("linearVelocity x" + rb.linearVelocity.x +" "+rb.linearVelocity.y);
+        rb.gravityScale = 0;
+        anim.SetBool("isRunning", false);
+        rb.linearVelocity = Vector2.zero;
+        // Tạm dừng player 0.4s trước khi thực thi Dash
+        yield return new WaitForSeconds(0.4f);       
         anim.SetTrigger("Dashing");
-
+        
+        float start = Time.time;
+        while (Time.time < start + dashTime)
+        {
+            rb.linearVelocity = dashDirection * dashSpeed;
+            
+            yield return null;      
+        }
         // 2. Đợi hết thời gian Dash
-        yield return new WaitForSeconds(dashTime);                
-
+        // yield return new WaitForSeconds(dashTime);
+        CreatingLandDust();
         isDashing = false;
+        rb.linearVelocity = Vector2.zero;
+        rb.gravityScale = 1;
+
+        // Tạo cảm giác "hồi chiêu" hoặc khựng lại sau cú Dash.
+        yield return new WaitForSeconds(0.4f); // <-- THÊM DÒNG NÀY
     
         // 4. gán lại giá trị nextDashTime cho lần kế tiếp
         nextDashTime = Time.time + dashCooldown; 
 
-    }
+    }        
+
 }   
